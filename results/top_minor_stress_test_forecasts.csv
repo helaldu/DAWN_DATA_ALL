@@ -1,0 +1,58 @@
+GL Number,description,best_model,fy,scenario_note,baseline_forecast_amount,dollar_adjustment,pct_adjustment,stressed_forecast_amount,stress_change_amount
+3113,BUSINESS LICENSE FEES,ARIMA/SARIMA,2027,Baseline / no manual stress adjustment,130226600.31769128,0.0,0.0,130226600.31769128,0.0
+3113,BUSINESS LICENSE FEES,ARIMA/SARIMA,2028,Baseline / no manual stress adjustment,133034833.37027167,0.0,0.0,133034833.37027167,0.0
+3113,BUSINESS LICENSE FEES,ARIMA/SARIMA,2029,Baseline / no manual stress adjustment,135745357.5905114,0.0,0.0,135745357.5905114,0.0
+3052,CIGARETTE TAX,ARIMA/SARIMA,2027,Baseline / no manual stress adjustment,90912255.84257674,0.0,0.0,90912255.84257674,0.0
+3052,CIGARETTE TAX,ARIMA/SARIMA,2028,Baseline / no manual stress adjustment,88855173.42237803,0.0,0.0,88855173.42237803,0.0
+3052,CIGARETTE TAX,ARIMA/SARIMA,2029,Baseline / no manual stress adjustment,88225121.77913846,0.0,0.0,88225121.77913846,0.0
+3130,CORPORATION LICENSES,Monte Carlo,2027,Baseline / no manual stress adjustment,97296110.6947469,0.0,0.0,97296110.6947469,0.0
+3130,CORPORATION LICENSES,Monte Carlo,2028,Baseline / no manual stress adjustment,100404978.19496408,0.0,0.0,100404978.19496408,0.0
+3130,CORPORATION LICENSES,Monte Carlo,2029,Baseline / no manual stress adjustment,103448722.24619627,0.0,0.0,103448722.24619627,0.0
+3066,SHORT-TERM AUTO LEASE TAX,Exponential smoothing - Holt,2027,Baseline / no manual stress adjustment,75849335.61555138,0.0,0.0,75849335.61555138,0.0
+3066,SHORT-TERM AUTO LEASE TAX,Exponential smoothing - Holt,2028,Baseline / no manual stress adjustment,78219095.47385322,0.0,0.0,78219095.47385322,0.0
+3066,SHORT-TERM AUTO LEASE TAX,Exponential smoothing - Holt,2029,Baseline / no manual stress adjustment,80588855.33215503,0.0,0.0,80588855.33215503,0.0
+3050,INTOXICATING BEVERAGE TAX,Machine learning - Random Forest,2027,ACAA event liquor-tax stress assumption,46504871.50671548,3000000.0,0.0,49504871.50671548,3000000.0
+3050,INTOXICATING BEVERAGE TAX,Machine learning - Random Forest,2028,"SUPERBOWL liquor-tax stress assumption, using 2024 +$3M estimate",46275523.07923398,3000000.0,0.0,49275523.07923398,3000000.0
+3050,INTOXICATING BEVERAGE TAX,Machine learning - Random Forest,2029,Baseline / no manual stress adjustment,46288313.398208946,0.0,0.0,46288313.398208946,0.0
+3073,TRANSP CONNECTION EXCISE TAX,Monte Carlo,2027,Baseline / no manual stress adjustment,45766267.0438865,0.0,0.0,45766267.0438865,0.0
+3073,TRANSP CONNECTION EXCISE TAX,Monte Carlo,2028,Baseline / no manual stress adjustment,48782895.44167397,0.0,0.0,48782895.44167397,0.0
+3073,TRANSP CONNECTION EXCISE TAX,Monte Carlo,2029,Baseline / no manual stress adjustment,51910852.92508214,0.0,0.0,51910852.92508214,0.0
+3053,OTHER TOBACCO PRODUCTS TAX,Machine learning - Random Forest,2027,Baseline / no manual stress adjustment,34060612.19264263,0.0,0.0,34060612.19264263,0.0
+3053,OTHER TOBACCO PRODUCTS TAX,Machine learning - Random Forest,2028,Baseline / no manual stress adjustment,32957960.043488268,0.0,0.0,32957960.043488268,0.0
+3053,OTHER TOBACCO PRODUCTS TAX,Machine learning - Random Forest,2029,Baseline / no manual stress adjustment,32782790.214044623,0.0,0.0,32782790.214044623,0.0
+3152,AGENTS/BROKERS/DEALERS REG FEE,Linear regression,2027,Baseline / no manual stress adjustment,40432946.21535587,0.0,0.0,40432946.21535587,0.0
+3152,AGENTS/BROKERS/DEALERS REG FEE,Linear regression,2028,Baseline / no manual stress adjustment,41581877.022511005,0.0,0.0,41581877.022511005,0.0
+3152,AGENTS/BROKERS/DEALERS REG FEE,Linear regression,2029,Baseline / no manual stress adjustment,42730807.82966614,0.0,0.0,42730807.82966614,0.0
+3101,INSURANCE LICENSES,ARIMA/SARIMA,2027,Baseline / no manual stress adjustment,30223268.955298707,0.0,0.0,30223268.955298707,0.0
+3101,INSURANCE LICENSES,ARIMA/SARIMA,2028,Baseline / no manual stress adjustment,30894045.53251253,0.0,0.0,30894045.53251253,0.0
+3101,INSURANCE LICENSES,ARIMA/SARIMA,2029,Baseline / no manual stress adjustment,30407539.80783513,0.0,0.0,30407539.80783513,0.0
+3002,STATE SHARE LSST,Monte Carlo,2027,Baseline / no manual stress adjustment,18853122.578687824,0.0,0.0,18853122.578687824,0.0
+3002,STATE SHARE LSST,Monte Carlo,2028,Baseline / no manual stress adjustment,19413434.24420007,0.0,0.0,19413434.24420007,0.0
+3002,STATE SHARE LSST,Monte Carlo,2029,Baseline / no manual stress adjustment,19974832.874766003,0.0,0.0,19974832.874766003,0.0
+3003,STATE SHARE OF BASIC CCRT,Exponential smoothing - Holt,2027,Baseline / no manual stress adjustment,8377824.427625497,0.0,0.0,8377824.427625497,0.0
+3003,STATE SHARE OF BASIC CCRT,Exponential smoothing - Holt,2028,Baseline / no manual stress adjustment,8650554.670155196,0.0,0.0,8650554.670155196,0.0
+3003,STATE SHARE OF BASIC CCRT,Exponential smoothing - Holt,2029,Baseline / no manual stress adjustment,8923284.912684895,0.0,0.0,8923284.912684895,0.0
+3004,STATE SHARE OF SUPP CCRT,Exponential smoothing - Holt,2027,Baseline / no manual stress adjustment,29249669.223862775,0.0,0.0,29249669.223862775,0.0
+3004,STATE SHARE OF SUPP CCRT,Exponential smoothing - Holt,2028,Baseline / no manual stress adjustment,30139120.648933295,0.0,0.0,30139120.648933295,0.0
+3004,STATE SHARE OF SUPP CCRT,Exponential smoothing - Holt,2029,Baseline / no manual stress adjustment,31028572.07400382,0.0,0.0,31028572.07400382,0.0
+3005,LOCAL OPTIONS TAX,Monte Carlo,2027,Baseline / no manual stress adjustment,22894172.861587916,0.0,0.0,22894172.861587916,0.0
+3005,LOCAL OPTIONS TAX,Monte Carlo,2028,Baseline / no manual stress adjustment,23685595.631756008,0.0,0.0,23685595.631756008,0.0
+3005,LOCAL OPTIONS TAX,Monte Carlo,2029,Baseline / no manual stress adjustment,24487968.642048042,0.0,0.0,24487968.642048042,0.0
+3114,"ADMIN ASSESS-NRS 176.059 5C,6C",Linear regression,2027,Baseline / no manual stress adjustment,9556216.10240674,0.0,0.0,9556216.10240674,0.0
+3114,"ADMIN ASSESS-NRS 176.059 5C,6C",Linear regression,2028,Baseline / no manual stress adjustment,10051422.798405409,0.0,0.0,10051422.798405409,0.0
+3114,"ADMIN ASSESS-NRS 176.059 5C,6C",Linear regression,2029,Baseline / no manual stress adjustment,10546629.494404078,0.0,0.0,10546629.494404078,0.0
+3047,EXPIRED SLOT MACHINE VOUCHERS,Linear regression,2027,Baseline / no manual stress adjustment,19599045.19152379,0.0,0.0,19599045.19152379,0.0
+3047,EXPIRED SLOT MACHINE VOUCHERS,Linear regression,2028,Baseline / no manual stress adjustment,20613554.604630947,0.0,0.0,20613554.604630947,0.0
+3047,EXPIRED SLOT MACHINE VOUCHERS,Linear regression,2029,Baseline / no manual stress adjustment,21628064.017738104,0.0,0.0,21628064.017738104,0.0
+3044,NONRESTRICTED SLOTS,Monte Carlo,2027,Baseline / no manual stress adjustment,10317143.183224047,0.0,0.0,10317143.183224047,0.0
+3044,NONRESTRICTED SLOTS,Monte Carlo,2028,Baseline / no manual stress adjustment,10287768.344470033,0.0,0.0,10287768.344470033,0.0
+3044,NONRESTRICTED SLOTS,Monte Carlo,2029,Baseline / no manual stress adjustment,10253531.752040049,0.0,0.0,10253531.752040049,0.0
+3043,FLAT FEE RESTRICTED SLOTS,Exponential smoothing - Holt,2027,Baseline / no manual stress adjustment,8872631.434982795,0.0,0.0,8872631.434982795,0.0
+3043,FLAT FEE RESTRICTED SLOTS,Exponential smoothing - Holt,2028,Baseline / no manual stress adjustment,8971435.407663487,0.0,0.0,8971435.407663487,0.0
+3043,FLAT FEE RESTRICTED SLOTS,Exponential smoothing - Holt,2029,Baseline / no manual stress adjustment,9070239.380344177,0.0,0.0,9070239.380344177,0.0
+3042,GAMING PENALTIES,Linear regression,2027,Baseline / no manual stress adjustment,8531826.633048415,0.0,0.0,8531826.633048415,0.0
+3042,GAMING PENALTIES,Linear regression,2028,Baseline / no manual stress adjustment,8866577.82480061,0.0,0.0,8866577.82480061,0.0
+3042,GAMING PENALTIES,Linear regression,2029,Baseline / no manual stress adjustment,9201329.016552687,0.0,0.0,9201329.016552687,0.0
+3276,COST RECOVERY PLAN CHARGE,ARIMA/SARIMA,2027,Baseline / no manual stress adjustment,7236672.0,0.0,0.0,7236672.0,0.0
+3276,COST RECOVERY PLAN CHARGE,ARIMA/SARIMA,2028,Baseline / no manual stress adjustment,7236672.0,0.0,0.0,7236672.0,0.0
+3276,COST RECOVERY PLAN CHARGE,ARIMA/SARIMA,2029,Baseline / no manual stress adjustment,7236672.0,0.0,0.0,7236672.0,0.0

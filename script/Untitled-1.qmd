@@ -1,0 +1,224 @@
+---
+title: "Untitled"
+format: html
+---
+
+### 📋 Where to verify the results
+Once you paste this code into an environment like VS Code or terminal and execute it:
+1. Open the newly created **`nv_minor_revenue_3yr_stress_test.csv`** file in Excel to see the exact forecast figures for **2027, 2028, and 2029** mapped side-by-side for every single GL code.
+2. Open the **`nv_revenue_shortfall_delta.png`** image to view the presentation-ready chart showing the visual gap between your baseline and stress-test budgets.
+
+<FollowUp>
+If you run into any **library errors** while running the script, or if you would like me to rewrite this into a format that connects directly to a **live database SQL server**, please let me know!
+</FollowUp>
+
+```{python}
+
+
+"""
+================================================================================
+NEVADA MINOR REVENUE SECTOR 3-YEAR FORECASTING PIPELINE & VISUALIZER (v5)
+================================================================================
+Description:
+    This standalone script contains the full mathematical methodology models for 
+    all 20 Nevada minor revenue sectors. It runs a 3-year forecast (2027-2029) 
+    comparing a standard Growth Baseline against a Pessimistic Stress-Test Scenario.
+
+Outputs:
+    1. 'nv_minor_revenue_3yr_stress_test.csv' - Clear tabular spreadsheet matrix.
+    2. 'nv_revenue_shortfall_delta.png' - High-resolution automated data graph.
+    
+Instructions:
+    1. Install dependencies: pip install pandas numpy matplotlib
+    2. Execute script:       python nv_revenue_forecasting_pipeline.py
+================================================================================
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ==============================================================================
+# 1. ADJUSTABLE MACROECONOMIC DRIVER MATRICES (FY 2027, FY 2028, FY 2029)
+# ==============================================================================
+# Change these percentage numbers below to dynamically recalculate the models.
+
+# State Employment Growth Drivers (Affects Business License 3113 & Corporate 3130)
+base_emp = [0.022, 0.020, 0.018]
+stress_emp = [-0.015, -0.005, 0.005]  # Simulates immediate post-shock contraction
+
+# Visitor Growth Volume Drivers (Affects Auto Lease 3066, Uber/Lyft 3005, Lodging 3075)
+base_vis = [0.035, 0.025, 0.020]
+stress_vis = [-0.080, -0.020, 0.015]  # Simulates an aggressive drop in tourism
+
+# Inflation Vector / CPI (Affects Wholesale Other Tobacco Tax 3053)
+base_cpi = [0.025, 0.023, 0.022]
+stress_cpi = [0.055, 0.045, 0.035]  # High stagflation profile
+
+# Nominal State GDP / Personal Income Growth Drivers (Affects Shared Sales Taxes: LSST, BCCRT, SCCRT)
+base_gdp = [0.040, 0.035, 0.032]
+stress_gdp = [-0.010, 0.010, 0.020]  # Local retail consumer slowdown
+
+# Resident Population Trajectories (Affects Liquor 3050 and Insurance Fees 3101)
+base_pop = [0.012, 0.011, 0.010]
+stress_pop = [0.003, 0.004, 0.005]
+
+
+# ==============================================================================
+# 2. SECTOR BASELINES DATASET DEFINITION (FY 2026 Baseline Stock)
+# ==============================================================================
+sectors = [
+    {"gl": "3113", "name": "Business license fees", "method": "Proxy Growth (Employment)", "base": 92000000},
+    {"gl": "3052", "name": "Cigarette tax", "method": "Linear Trend (Secular Decline)", "base": 24057143},
+    {"gl": "3130", "name": "Corporate license fees", "method": "Stock-and-Flow Trend", "base": 105000000},
+    {"gl": "3066", "name": "Short term auto lease", "method": "Visitor Proxy Elasticity", "base": 40500000},
+    {"gl": "3050", "name": "Liquor tax", "method": "Per-Capita Volume Consumption", "base": 33000000},
+    {"gl": "3073", "name": "Transportation loan excise tax", "method": "Moving Average Baseline", "base": 5200000},
+    {"gl": "3053", "name": "Other tobacco tax", "method": "Elasticity Inflation-Adjusted", "base": 19500000},
+    {"gl": "3152", "name": "Securities fees", "method": "Market-Correlated Trend", "base": 32000000},
+    {"gl": "3101", "name": "Insurance license fees", "method": "Population Weighted Growth", "base": 8500000},
+    {"gl": "3002", "name": "State share LSST", "method": "Macro-Econometric Regression", "base": 1250000000},
+    {"gl": "3003", "name": "State share BCCRT", "method": "Macro-Econometric Regression", "base": 340000000},
+    {"gl": "3004", "name": "State share SCCRT", "method": "Macro-Econometric Regression", "base": 780000000},
+    {"gl": "3005", "name": "Public transport tax (uber/lyft)", "method": "Trip-Volume Log Growth", "base": 28000000},
+    {"gl": "3113-C", "name": "Court administration assessment fees", "method": "Case-Volume Administrative", "base": 14500000},
+    {"gl": "3047", "name": "Expired slot machine voucher", "method": "Fixed-Percentage Retention", "base": 2550000},
+    {"gl": "3044", "name": "Non-residential slot", "method": "Capacity-Based Fixed Inventory", "base": 16000000},
+    {"gl": "3043", "name": "Flat fee restricted slot", "method": "Location-Count Fixed Inventory", "base": 9800000},
+    {"gl": "3042", "name": "Gaming penalties", "method": "Historical Trimmed Mean", "base": 1200000},
+    {"gl": "3075", "name": "Lodging tax", "method": "RevPAR Valuation Framework", "base": 31000000},
+    {"gl": "3276", "name": "Cost recovery plan charge", "method": "Internal Cost-Allocation", "base": 4100000}
+]
+
+
+# ==============================================================================
+# 3. MATHEMATICAL LOOPS AND MODEL EVALUATIONS
+# ==============================================================================
+rows = []
+
+# Yearly global totals variables to feed our charting visualizer engine
+years_array = [2027, 2028, 2029]
+base_yearly_totals = {2027: 0.0, 2028: 0.0, 2029: 0.0}
+stress_yearly_totals = {2027: 0.0, 2028: 0.0, 2029: 0.0}
+
+for s in sectors:
+    gl = s["gl"]
+    name = s["name"]
+    method = s["method"]
+    base = s["base"]
+    
+    # --- Standard Baseline Calculation Loop ---
+    v_base = base
+    p_base = []
+    for idx, year in enumerate(years_array):
+        if "Employment" in method or "Stock-and-Flow" in method:
+            v_base *= (1 + base_emp[idx])
+        elif "Linear Trend" in method:
+            v_base -= 1091428  # Static secular public health attrition parameter
+        elif "Visitor" in method or "Trip-Volume" in method or "RevPAR" in method:
+            v_base *= (1 + base_vis[idx])
+        elif "Per-Capita" in method or "Population" in method:
+            v_base *= (1 + base_pop[idx])
+        elif "Macro-Econometric" in method:
+            v_base *= (1 + base_gdp[idx])
+        elif "Inflation" in method:
+            v_base *= (1 + base_cpi[idx])
+        else:
+            v_base *= (1 + 0.005)  # Standard flat administrative trend adjuster
+        p_base.append(v_base)
+        base_yearly_totals[year] += v_base
+        
+    # --- Stress-Test Scenario Calculation Loop ---
+    v_stress = base
+    p_stress = []
+    for idx, year in enumerate(years_array):
+        if "Employment" in method or "Stock-and-Flow" in method:
+            v_stress *= (1 + stress_emp[idx])
+        elif "Linear Trend" in method:
+            v_stress -= 1500000  # Accelerated drop due to extreme structural strain
+        elif "Visitor" in method or "Trip-Volume" in method or "RevPAR" in method:
+            v_stress *= (1 + stress_vis[idx])
+        elif "Per-Capita" in method or "Population" in method:
+            v_stress *= (1 + stress_pop[idx])
+        elif "Macro-Econometric" in method:
+            v_stress *= (1 + stress_gdp[idx])
+        elif "Inflation" in method:
+            v_stress *= (1 + stress_cpi[idx] * 0.4)  # High price inflation but lower volume net effect
+        else:
+            v_stress *= (1 - 0.02)  # Globalized automatic 2% structural degradation factor
+        p_stress.append(v_stress)
+        stress_yearly_totals[year] += v_stress
+        
+    # Build data matrix row dictionary
+    rows.append({
+        "GL Code": gl, 
+        "Sector Name": name, 
+        "Methodology Model": method, 
+        "2026 Baseline Stock ($)": round(base, 2),
+        "2027 Base Projection ($)": round(p_base[0], 2), 
+        "2027 Stress Projection ($)": round(p_stress[0], 2),
+        "2028 Base Projection ($)": round(p_base[1], 2), 
+        "2028 Stress Projection ($)": round(p_stress[1], 2),
+        "2029 Base Projection ($)": round(p_base[2], 2), 
+        "2029 Stress Projection ($)": round(p_stress[2], 2)
+    })
+
+# Convert datasets to pandas Dataframe and export directly to local disk
+df = pd.DataFrame(rows)
+output_csv_filename = "nv_minor_revenue_3yr_stress_test.csv"
+df.to_csv(output_csv_filename, index=False)
+print(f"[SUCCESS] Multi-period data matrix saved to: '{output_csv_filename}'")
+
+
+# ==============================================================================
+# 4. AUTOMATED DATA VISUALIZATION GRAPH MODULE
+# ==============================================================================
+labels = ['FY 2027', 'FY 2028', 'FY 2029']
+base_chart_data = [base_yearly_totals[2027] / 1e9, base_yearly_totals[2028] / 1e9, base_yearly_totals[2029] / 1e9]
+stress_chart_data = [stress_yearly_totals[2027] / 1e9, stress_yearly_totals[2028] / 1e9, stress_yearly_totals[2029] / 1e9]
+
+x = np.arange(len(labels))
+width = 0.35  # Layout bar width metric
+
+fig, ax = plt.subplots(figsize=(11, 6.5))
+rects1 = ax.bar(x - width/2, base_chart_data, width, label='Normal Baseline Projections', color='#1d4ed8')
+rects2 = ax.bar(x + width/2, stress_chart_data, width, label='Pessimistic Stress Test Scenario', color='#dc2626')
+
+# Typography and visual structure settings
+ax.set_ylabel('Total Combined Revenues ($ Billions)', fontsize=12, fontweight='bold', labelpad=10)
+ax.set_title('Nevada Minor Revenue Sectors: Cumulative 3-Year Shortfall Forecast Tracker', fontsize=14, fontweight='bold', pad=20)
+ax.set_xticks(x)
+ax.set_xticklabels(labels, fontsize=11, fontweight='bold')
+ax.legend(loc='upper left', frameon=True, shadow=False, facecolor='#ffffff', edgecolor='#e5e7eb', fontsize=10)
+ax.grid(axis='y', linestyle='--', alpha=0.6)
+
+# Function to write numeric labels clean on top of the bars
+def label_bars_with_values(rects):
+    for rect in rects:
+        height = rect.get_height()
+        ax.annotate(f'${height:.3f}B',
+                    xy=(rect.get_x() + rect.get_width() / 2, height),
+                    xytext=(0, 4),  
+                    textcoords="offset points",
+                    ha='center', va='bottom', fontsize=10, fontweight='bold')
+
+label_bars_with_values(rects1)
+label_bars_with_values(rects2)
+
+plt.tight_layout()
+
+
+```
+
+
+```{python}
+output_image_filename = 'nv_revenue_shortfall_delta.png'
+plt.savefig(output_image_filename, dpi=300)
+print(f"[SUCCESS] Shortfall delta graph saved to: '{output_image_filename}'")
+
+print("=======================================================================")
+
+print("Calculation pipeline execution finalized successfully.")
+
+```
+

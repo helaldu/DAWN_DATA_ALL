@@ -1,0 +1,61 @@
+GL Number,description,fy,scenario_note,dollar_adjustment,pct_adjustment
+3113,BUSINESS LICENSE FEES,2027,Baseline / no manual stress adjustment,0.0,0.0
+3113,BUSINESS LICENSE FEES,2028,Baseline / no manual stress adjustment,0.0,0.0
+3113,BUSINESS LICENSE FEES,2029,Baseline / no manual stress adjustment,0.0,0.0
+3052,CIGARETTE TAX,2027,Baseline / no manual stress adjustment,0.0,0.0
+3052,CIGARETTE TAX,2028,Baseline / no manual stress adjustment,0.0,0.0
+3052,CIGARETTE TAX,2029,Baseline / no manual stress adjustment,0.0,0.0
+3130,CORPORATION LICENSES,2027,Baseline / no manual stress adjustment,0.0,0.0
+3130,CORPORATION LICENSES,2028,Baseline / no manual stress adjustment,0.0,0.0
+3130,CORPORATION LICENSES,2029,Baseline / no manual stress adjustment,0.0,0.0
+3066,SHORT-TERM AUTO LEASE TAX,2027,Baseline / no manual stress adjustment,0.0,0.0
+3066,SHORT-TERM AUTO LEASE TAX,2028,Baseline / no manual stress adjustment,0.0,0.0
+3066,SHORT-TERM AUTO LEASE TAX,2029,Baseline / no manual stress adjustment,0.0,0.0
+3050,INTOXICATING BEVERAGE TAX,2027,ACAA event liquor-tax stress assumption,3000000.0,0.0
+3050,INTOXICATING BEVERAGE TAX,2028,"SUPERBOWL liquor-tax stress assumption, using 2024 +$3M estimate",3000000.0,0.0
+3050,INTOXICATING BEVERAGE TAX,2029,Baseline / no manual stress adjustment,0.0,0.0
+3073,TRANSP CONNECTION EXCISE TAX,2027,Baseline / no manual stress adjustment,0.0,0.0
+3073,TRANSP CONNECTION EXCISE TAX,2028,Baseline / no manual stress adjustment,0.0,0.0
+3073,TRANSP CONNECTION EXCISE TAX,2029,Baseline / no manual stress adjustment,0.0,0.0
+3053,OTHER TOBACCO PRODUCTS TAX,2027,Baseline / no manual stress adjustment,0.0,0.0
+3053,OTHER TOBACCO PRODUCTS TAX,2028,Baseline / no manual stress adjustment,0.0,0.0
+3053,OTHER TOBACCO PRODUCTS TAX,2029,Baseline / no manual stress adjustment,0.0,0.0
+3152,AGENTS/BROKERS/DEALERS REG FEE,2027,Baseline / no manual stress adjustment,0.0,0.0
+3152,AGENTS/BROKERS/DEALERS REG FEE,2028,Baseline / no manual stress adjustment,0.0,0.0
+3152,AGENTS/BROKERS/DEALERS REG FEE,2029,Baseline / no manual stress adjustment,0.0,0.0
+3101,INSURANCE LICENSES,2027,Baseline / no manual stress adjustment,0.0,0.0
+3101,INSURANCE LICENSES,2028,Baseline / no manual stress adjustment,0.0,0.0
+3101,INSURANCE LICENSES,2029,Baseline / no manual stress adjustment,0.0,0.0
+3002,STATE SHARE LSST,2027,Baseline / no manual stress adjustment,0.0,0.0
+3002,STATE SHARE LSST,2028,Baseline / no manual stress adjustment,0.0,0.0
+3002,STATE SHARE LSST,2029,Baseline / no manual stress adjustment,0.0,0.0
+3003,STATE SHARE OF BASIC CCRT,2027,Baseline / no manual stress adjustment,0.0,0.0
+3003,STATE SHARE OF BASIC CCRT,2028,Baseline / no manual stress adjustment,0.0,0.0
+3003,STATE SHARE OF BASIC CCRT,2029,Baseline / no manual stress adjustment,0.0,0.0
+3004,STATE SHARE OF SUPP CCRT,2027,Baseline / no manual stress adjustment,0.0,0.0
+3004,STATE SHARE OF SUPP CCRT,2028,Baseline / no manual stress adjustment,0.0,0.0
+3004,STATE SHARE OF SUPP CCRT,2029,Baseline / no manual stress adjustment,0.0,0.0
+3005,LOCAL OPTIONS TAX,2027,Baseline / no manual stress adjustment,0.0,0.0
+3005,LOCAL OPTIONS TAX,2028,Baseline / no manual stress adjustment,0.0,0.0
+3005,LOCAL OPTIONS TAX,2029,Baseline / no manual stress adjustment,0.0,0.0
+3114,"ADMIN ASSESS-NRS 176.059 5C,6C",2027,Baseline / no manual stress adjustment,0.0,0.0
+3114,"ADMIN ASSESS-NRS 176.059 5C,6C",2028,Baseline / no manual stress adjustment,0.0,0.0
+3114,"ADMIN ASSESS-NRS 176.059 5C,6C",2029,Baseline / no manual stress adjustment,0.0,0.0
+3047,EXPIRED SLOT MACHINE VOUCHERS,2027,Baseline / no manual stress adjustment,0.0,0.0
+3047,EXPIRED SLOT MACHINE VOUCHERS,2028,Baseline / no manual stress adjustment,0.0,0.0
+3047,EXPIRED SLOT MACHINE VOUCHERS,2029,Baseline / no manual stress adjustment,0.0,0.0
+3044,NONRESTRICTED SLOTS,2027,Baseline / no manual stress adjustment,0.0,0.0
+3044,NONRESTRICTED SLOTS,2028,Baseline / no manual stress adjustment,0.0,0.0
+3044,NONRESTRICTED SLOTS,2029,Baseline / no manual stress adjustment,0.0,0.0
+3043,FLAT FEE RESTRICTED SLOTS,2027,Baseline / no manual stress adjustment,0.0,0.0
+3043,FLAT FEE RESTRICTED SLOTS,2028,Baseline / no manual stress adjustment,0.0,0.0
+3043,FLAT FEE RESTRICTED SLOTS,2029,Baseline / no manual stress adjustment,0.0,0.0
+3042,GAMING PENALTIES,2027,Baseline / no manual stress adjustment,0.0,0.0
+3042,GAMING PENALTIES,2028,Baseline / no manual stress adjustment,0.0,0.0
+3042,GAMING PENALTIES,2029,Baseline / no manual stress adjustment,0.0,0.0
+3276,COST RECOVERY PLAN CHARGE,2027,Baseline / no manual stress adjustment,0.0,0.0
+3276,COST RECOVERY PLAN CHARGE,2028,Baseline / no manual stress adjustment,0.0,0.0
+3276,COST RECOVERY PLAN CHARGE,2029,Baseline / no manual stress adjustment,0.0,0.0
+3075,PEER TO PEER CAR SHARING TAX,2027,Baseline / no manual stress adjustment,0.0,0.0
+3075,PEER TO PEER CAR SHARING TAX,2028,Baseline / no manual stress adjustment,0.0,0.0
+3075,PEER TO PEER CAR SHARING TAX,2029,Baseline / no manual stress adjustment,0.0,0.0

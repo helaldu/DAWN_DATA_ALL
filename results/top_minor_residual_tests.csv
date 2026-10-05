@@ -1,0 +1,39 @@
+GL Number,description,test,lag,statistic,p_value,verdict
+3113,BUSINESS LICENSE FEES,Ljung-Box residual autocorrelation,10.0,19.34022183840675,0.036148175974134465,Residual autocorrelation may remain
+3113,BUSINESS LICENSE FEES,Jarque-Bera residual normality,,10.929678033145509,0.004233022438644706,Normality rejected at 5%
+3052,CIGARETTE TAX,Ljung-Box residual autocorrelation,10.0,5.610538919976983,0.8468544731072594,No residual autocorrelation at 5%
+3052,CIGARETTE TAX,Jarque-Bera residual normality,,25.275766586226013,3.246661588445459e-06,Normality rejected at 5%
+3130,CORPORATION LICENSES,Ljung-Box residual autocorrelation,10.0,11.037915348363011,0.35457168683580936,No residual autocorrelation at 5%
+3130,CORPORATION LICENSES,Jarque-Bera residual normality,,0.002180526993870291,0.9989103306243754,Normality not rejected at 5%
+3066,SHORT-TERM AUTO LEASE TAX,Ljung-Box residual autocorrelation,10.0,6.401599581650985,0.7804700598554553,No residual autocorrelation at 5%
+3066,SHORT-TERM AUTO LEASE TAX,Jarque-Bera residual normality,,50.803257895732976,9.294215041476583e-12,Normality rejected at 5%
+3050,INTOXICATING BEVERAGE TAX,Ljung-Box residual autocorrelation,10.0,5.280092717648351,0.8716994594429182,No residual autocorrelation at 5%
+3050,INTOXICATING BEVERAGE TAX,Jarque-Bera residual normality,,129.7065110819921,6.832647016560666e-29,Normality rejected at 5%
+3073,TRANSP CONNECTION EXCISE TAX,Ljung-Box residual autocorrelation,4.0,3.9352485609063805,0.41483992614004117,No residual autocorrelation at 5%
+3073,TRANSP CONNECTION EXCISE TAX,Jarque-Bera residual normality,,0.5666089735134442,0.7532903859900739,Normality not rejected at 5%
+3053,OTHER TOBACCO PRODUCTS TAX,Ljung-Box residual autocorrelation,10.0,6.175583670706799,0.8003019755685774,No residual autocorrelation at 5%
+3053,OTHER TOBACCO PRODUCTS TAX,Jarque-Bera residual normality,,11.978716955583828,0.00250527072159448,Normality rejected at 5%
+3152,AGENTS/BROKERS/DEALERS REG FEE,Ljung-Box residual autocorrelation,10.0,8.454759805771658,0.5845073395514073,No residual autocorrelation at 5%
+3152,AGENTS/BROKERS/DEALERS REG FEE,Jarque-Bera residual normality,,12.472309408304099,0.001957367728260893,Normality rejected at 5%
+3101,INSURANCE LICENSES,Ljung-Box residual autocorrelation,10.0,2.8657906639723265,0.9844082730427974,No residual autocorrelation at 5%
+3101,INSURANCE LICENSES,Jarque-Bera residual normality,,30.676478292651442,2.1811592567921726e-07,Normality rejected at 5%
+3002,STATE SHARE LSST,Ljung-Box residual autocorrelation,10.0,3.804889644681776,0.9557197688354973,No residual autocorrelation at 5%
+3002,STATE SHARE LSST,Jarque-Bera residual normality,,33.9742354083825,4.1936146196452364e-08,Normality rejected at 5%
+3003,STATE SHARE OF BASIC CCRT,Ljung-Box residual autocorrelation,10.0,4.497419790782811,0.9221310245998373,No residual autocorrelation at 5%
+3003,STATE SHARE OF BASIC CCRT,Jarque-Bera residual normality,,48.94937930960181,2.3484284696512882e-11,Normality rejected at 5%
+3004,STATE SHARE OF SUPP CCRT,Ljung-Box residual autocorrelation,10.0,4.4893506499701665,0.9225839580829275,No residual autocorrelation at 5%
+3004,STATE SHARE OF SUPP CCRT,Jarque-Bera residual normality,,49.06571540456817,2.215722024148241e-11,Normality rejected at 5%
+3005,LOCAL OPTIONS TAX,Ljung-Box residual autocorrelation,10.0,5.632254466795112,0.8451557796862434,No residual autocorrelation at 5%
+3005,LOCAL OPTIONS TAX,Jarque-Bera residual normality,,26.518867297729493,1.7438179073275131e-06,Normality rejected at 5%
+3114,"ADMIN ASSESS-NRS 176.059 5C,6C",Ljung-Box residual autocorrelation,8.0,1.4054915682120885,0.9941682426672679,No residual autocorrelation at 5%
+3114,"ADMIN ASSESS-NRS 176.059 5C,6C",Jarque-Bera residual normality,,83.90100868976278,6.041258927936965e-19,Normality rejected at 5%
+3047,EXPIRED SLOT MACHINE VOUCHERS,Ljung-Box residual autocorrelation,6.0,2.0578963460019715,0.9142975625447926,No residual autocorrelation at 5%
+3047,EXPIRED SLOT MACHINE VOUCHERS,Jarque-Bera residual normality,,6.401840917225018,0.04072470131912017,Normality rejected at 5%
+3044,NONRESTRICTED SLOTS,Ljung-Box residual autocorrelation,10.0,0.14406119962189837,0.9999999847819989,No residual autocorrelation at 5%
+3044,NONRESTRICTED SLOTS,Jarque-Bera residual normality,,609.265074746999,5.009218899751548e-133,Normality rejected at 5%
+3043,FLAT FEE RESTRICTED SLOTS,Ljung-Box residual autocorrelation,10.0,10.287706170964595,0.41562484515627773,No residual autocorrelation at 5%
+3043,FLAT FEE RESTRICTED SLOTS,Jarque-Bera residual normality,,55.53453199430388,8.726289158857041e-13,Normality rejected at 5%
+3042,GAMING PENALTIES,Ljung-Box residual autocorrelation,10.0,9.79770594046321,0.45841705555742707,No residual autocorrelation at 5%
+3042,GAMING PENALTIES,Jarque-Bera residual normality,,28.946171544236428,5.181061089569773e-07,Normality rejected at 5%
+3276,COST RECOVERY PLAN CHARGE,Ljung-Box residual autocorrelation,10.0,7.13111491918546,0.7130116436898926,No residual autocorrelation at 5%
+3276,COST RECOVERY PLAN CHARGE,Jarque-Bera residual normality,,8.309473044923667,0.015689924527756957,Normality rejected at 5%

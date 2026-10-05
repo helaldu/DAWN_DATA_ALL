@@ -1,0 +1,6 @@
+data/dawn_document_history_9040_detail.csv filter=lfs diff=lfs merge=lfs -text
+data/dawn_document_history_9130_detail.csv filter=lfs diff=lfs merge=lfs -text
+data/dawn_document_history_9600_detail.csv filter=lfs diff=lfs merge=lfs -text
+data/dawn_document_history_9741_detail.csv filter=lfs diff=lfs merge=lfs -text
+data/dawn_document_history_9748_detail.csv filter=lfs diff=lfs merge=lfs -text
+data/dawn_document_history_9999_detail.csv filter=lfs diff=lfs merge=lfs -text

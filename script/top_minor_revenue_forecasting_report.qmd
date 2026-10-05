@@ -1,0 +1,861 @@
+﻿---
+title: "Top Minor Revenue Forecasting Report"
+author: "Syed Al-Helal Uddin"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    code-fold: true
+    theme: cosmo
+    page-layout: article
+execute:
+  echo: true
+  warning: false
+  message: false
+jupyter: python3
+---
+
+# Purpose
+
+This report builds reproducible forecasting models for selected minor revenue GL codes. It reads the combined DAWN revenue history file, calculates minor revenue shares, creates historical interactive plots, runs time-series diagnostics, validates multiple forecasting approaches, and forecasts the next three fiscal years for each GL code.
+
+
+
+
+```{python}
+#| echo: false
+
+
+# Setup
+# Core data tools
+from collections import defaultdict
+from pathlib import Path
+import math
+import warnings
+
+import numpy as np
+import pandas as pd
+
+# Interactive plotting
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
+from IPython.display import HTML, Markdown, display
+
+# Statistical and forecasting tools
+from scipy.stats import jarque_bera
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+from statsmodels.stats.diagnostic import acorr_ljungbox
+from statsmodels.tsa.api import ExponentialSmoothing
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.stattools import acf, adfuller, pacf
+
+warnings.filterwarnings("ignore")
+pd.options.display.float_format = "{:,.3f}".format
+```
+
+```{python}
+#| echo: false
+
+
+# Paths are written so the report can be rendered from either the project root or the script folder.
+PROJECT_ROOT = Path.cwd()
+if PROJECT_ROOT.name.lower() == "script":
+    PROJECT_ROOT = PROJECT_ROOT.parent
+
+DATA_PATH = PROJECT_ROOT / "data" / "dawn_revenue_accounts_combined_history.csv"
+RESULTS_DIR = PROJECT_ROOT / "results"
+RESULTS_DIR.mkdir(exist_ok=True)
+
+if not DATA_PATH.exists():
+    raise FileNotFoundError(f"Could not find combined history CSV at: {DATA_PATH}")
+
+DATA_PATH
+```
+
+# Step 1: Read Combined History Data
+
+```{python}
+#| echo: false
+
+# Read the DAWN combined history file.
+df = pd.read_csv(DATA_PATH)
+
+# Standardize key fields used throughout the report.
+df["Amount"] = pd.to_numeric(df["Amount"], errors="coerce").fillna(0.0)
+df["GL Number"] = df["GL Number"].astype(str).str.strip()
+df["Type"] = df["Type"].astype(str).str.strip()
+df["fy"] = df["fy"].astype(str).str.strip()
+df["description"] = df["description"].astype(str).str.strip()
+df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+
+# Keep only minor records and exclude GL 3290.
+minor_df = df[
+    df["Type"].str.lower().eq("minor")
+    & ~df["GL Number"].eq("3290")
+].copy()
+
+print(f"All rows: {len(df):,}")
+print(f"Minor rows excluding GL 3290: {len(minor_df):,}")
+print(f"Rows with GL 3290 in minor_df: {(minor_df['GL Number'] == '3290').sum():,}")
+```
+
+# Step 2: Top 15 GL Codes by Share of Total Minor Revenue
+
+```{python}
+#| echo: false
+
+
+# Total minor revenue across the full history.
+total_minor_amount = minor_df["Amount"].sum()
+
+minor_gl_share = (
+    minor_df.groupby(["GL Number", "description"], as_index=False)
+    .agg(
+        total_amount=("Amount", "sum"),
+        transaction_count=("Amount", "size"),
+    )
+    .assign(share_of_total_minor=lambda x: x["total_amount"] / total_minor_amount)
+    .sort_values("share_of_total_minor", ascending=False)
+)
+
+top_15_minor_gl_share = minor_gl_share.head(15).copy()
+
+# Save output so the table can be reused outside the report.
+minor_gl_share.to_csv(RESULTS_DIR / "minor_gl_revenue_share_all_history.csv", index=False)
+top_15_minor_gl_share.to_csv(RESULTS_DIR / "top_15_minor_gl_revenue_share_all_history.csv", index=False)
+
+top_15_minor_gl_share
+```
+
+```{python}
+#| echo: false
+
+
+fig = px.bar(
+    top_15_minor_gl_share.sort_values("share_of_total_minor"),
+    x="share_of_total_minor",
+    y="GL Number",
+    color="description",
+    orientation="h",
+    text=top_15_minor_gl_share.sort_values("share_of_total_minor")["share_of_total_minor"].map(lambda x: f"{x:.2%}"),
+    title="Top 15 Minor GL Codes by Share of Total Minor Revenue",
+    labels={"share_of_total_minor": "Share of Total Minor Revenue", "GL Number": "GL Number"},
+)
+fig.update_layout(height=650, showlegend=False)
+fig.update_xaxes(tickformat=".0%")
+fig.show()
+```
+
+# Modeling Functions
+
+```{python}
+#| echo: false
+
+
+TARGET_GL_CODES = [
+    "3113", "3052", "3130", "3066", "3050", "3073", "3053", "3152", "3101", "3002",
+    "3003", "3004", "3005", "3114", "3047", "3044", "3043", "3042", "3276", "3075",
+]
+
+FORECAST_HORIZON = 3
+HOLDOUT_SIZE = 3
+RANDOM_SEED = 42
+
+
+def make_annual_series(data, gl_code):
+    """Aggregate one GL code to fiscal-year totals."""
+    one_gl = data[data["GL Number"].eq(str(gl_code))].copy()
+    annual = (
+        one_gl.groupby("fy", as_index=False)
+        .agg(total_amount=("Amount", "sum"), description=("description", "first"))
+    )
+    annual = annual[annual["fy"].str.match(r"^\d+$", na=False)].copy()
+    annual["fy"] = annual["fy"].astype(int)
+    annual = annual.sort_values("fy").reset_index(drop=True)
+    return annual
+
+
+def mape(actual, predicted):
+    """Mean absolute percentage error, skipping zero actuals."""
+    actual = np.asarray(actual, dtype=float)
+    predicted = np.asarray(predicted, dtype=float)
+    mask = actual != 0
+    if mask.sum() == 0:
+        return np.nan
+    return np.mean(np.abs((actual[mask] - predicted[mask]) / actual[mask]))
+
+
+def rmse(actual, predicted):
+    return math.sqrt(mean_squared_error(actual, predicted))
+
+
+def run_adf(values, label):
+    """Run ADF unit-root test and return a tidy dictionary."""
+    values = pd.Series(values).dropna()
+    if len(values) < 8 or values.nunique() <= 1:
+        return {
+            "series": label,
+            "adf_statistic": np.nan,
+            "p_value": np.nan,
+            "used_lag": np.nan,
+            "n_obs": len(values),
+            "critical_1pct": np.nan,
+            "critical_5pct": np.nan,
+            "critical_10pct": np.nan,
+            "verdict": "Insufficient variation/sample",
+        }
+    stat, p_value, used_lag, n_obs, critical, _ = adfuller(values, autolag="AIC")
+    return {
+        "series": label,
+        "adf_statistic": stat,
+        "p_value": p_value,
+        "used_lag": used_lag,
+        "n_obs": n_obs,
+        "critical_1pct": critical["1%"],
+        "critical_5pct": critical["5%"],
+        "critical_10pct": critical["10%"],
+        "verdict": "Stationary" if p_value <= 0.05 else "Unit root not rejected",
+    }
+
+
+def plot_acf_pacf_interactive(values, gl_code, description):
+    """Create interactive ACF/PACF plots for level and first difference with confidence bands."""
+    values = pd.Series(values).astype(float).reset_index(drop=True)
+    diff_values = values.diff().dropna().reset_index(drop=True)
+
+    max_level_lags = max(1, min(10, len(values) - 2))
+    max_diff_lags = max(1, min(10, len(diff_values) - 2))
+    max_level_pacf_lags = max(1, min(max_level_lags, len(values) // 2 - 1))
+    max_diff_pacf_lags = max(1, min(max_diff_lags, len(diff_values) // 2 - 1))
+
+    acf_level = acf(values, nlags=max_level_lags, fft=False)
+    pacf_level = pacf(values, nlags=max_level_pacf_lags, method="ywm")
+    acf_diff = acf(diff_values, nlags=max_diff_lags, fft=False)
+    pacf_diff = pacf(diff_values, nlags=max_diff_pacf_lags, method="ywm")
+    level_ci = 1.96 / np.sqrt(len(values))
+    diff_ci = 1.96 / np.sqrt(len(diff_values))
+
+    fig = make_subplots(
+        rows=2,
+        cols=2,
+        subplot_titles=("ACF: Level", "PACF: Level", "ACF: First Difference", "PACF: First Difference"),
+    )
+    fig.add_bar(x=list(range(len(acf_level))), y=acf_level, row=1, col=1, name="ACF level")
+    fig.add_bar(x=list(range(len(pacf_level))), y=pacf_level, row=1, col=2, name="PACF level")
+    fig.add_bar(x=list(range(len(acf_diff))), y=acf_diff, row=2, col=1, name="ACF diff")
+    fig.add_bar(x=list(range(len(pacf_diff))), y=pacf_diff, row=2, col=2, name="PACF diff")
+
+    # Approximate 95% confidence bands for correlation diagnostics.
+    for row, ci in [(1, level_ci), (2, diff_ci)]:
+        for col in [1, 2]:
+            fig.add_hline(y=ci, line_dash="dash", line_color="firebrick", row=row, col=col)
+            fig.add_hline(y=-ci, line_dash="dash", line_color="firebrick", row=row, col=col)
+    fig.update_layout(
+        title=f"GL {gl_code} - {description}: ACF and PACF Diagnostics",
+        height=700,
+        showlegend=False,
+    )
+    fig.update_xaxes(title_text="Lag")
+    fig.update_yaxes(title_text="Correlation")
+    return fig
+
+
+def select_d(unit_root_table):
+    """Choose differencing order from ADF results."""
+    level_p = unit_root_table.loc[unit_root_table["series"].eq("Level"), "p_value"].iloc[0]
+    diff_p = unit_root_table.loc[unit_root_table["series"].eq("First difference"), "p_value"].iloc[0]
+    if pd.notna(level_p) and level_p <= 0.05:
+        return 0
+    if pd.notna(diff_p) and diff_p <= 0.05:
+        return 1
+    return 2
+
+
+def find_arima_order(values, d, max_p=3, max_q=3):
+    """Grid-search ARIMA p and q by AIC."""
+    records = []
+    for p in range(max_p + 1):
+        for q in range(max_q + 1):
+            if p == 0 and d == 0 and q == 0:
+                continue
+            order = (p, d, q)
+            try:
+                model = ARIMA(values, order=order)
+                result = model.fit()
+                records.append({
+                    "order": order,
+                    "aic": result.aic,
+                    "bic": result.bic,
+                    "hqic": result.hqic,
+                    "converged": result.mle_retvals.get("converged", None),
+                })
+            except Exception as exc:
+                records.append({"order": order, "aic": np.nan, "bic": np.nan, "hqic": np.nan, "converged": False})
+    order_table = pd.DataFrame(records).dropna(subset=["aic"]).sort_values("aic").reset_index(drop=True)
+    best_order = tuple(order_table.loc[0, "order"]) if len(order_table) else (1, d, 0)
+    return best_order, order_table
+
+
+def forecast_linear(train_years, train_values, future_years):
+    model = LinearRegression()
+    model.fit(np.asarray(train_years).reshape(-1, 1), train_values)
+    return model.predict(np.asarray(future_years).reshape(-1, 1))
+
+
+def forecast_holt(train_values, periods):
+    model = ExponentialSmoothing(train_values, trend="add", seasonal=None, initialization_method="estimated")
+    result = model.fit(optimized=True)
+    return np.asarray(result.forecast(periods))
+
+
+def forecast_monte_carlo(train_values, periods, simulations=5000, seed=RANDOM_SEED):
+    """Monte Carlo forecast using historical one-year changes as the shock distribution."""
+    rng = np.random.default_rng(seed)
+    diffs = np.diff(train_values)
+    if len(diffs) == 0:
+        return np.repeat(train_values[-1], periods)
+    simulated_paths = np.zeros((simulations, periods))
+    for s in range(simulations):
+        value = train_values[-1]
+        for h in range(periods):
+            value = value + rng.choice(diffs)
+            simulated_paths[s, h] = value
+    return simulated_paths.mean(axis=0)
+
+
+def forecast_arima(train_values, periods, order):
+    model = ARIMA(train_values, order=order)
+    result = model.fit()
+    return np.asarray(result.forecast(steps=periods)), result
+
+
+def forecast_ml(train_years, train_values, future_years, lag=3):
+    """Random forest with FY and lagged revenue features."""
+    train_values = list(train_values)
+    train_years = list(train_years)
+    if len(train_values) <= lag:
+        return forecast_linear(train_years, train_values, future_years)
+
+    X, y = [], []
+    for i in range(lag, len(train_values)):
+        X.append([train_years[i], train_values[i - 1], train_values[i - 2], train_values[i - 3]])
+        y.append(train_values[i])
+
+    model = RandomForestRegressor(n_estimators=500, min_samples_leaf=2, random_state=RANDOM_SEED)
+    model.fit(X, y)
+
+    history = train_values.copy()
+    predictions = []
+    for year in future_years:
+        pred = float(model.predict([[year, history[-1], history[-2], history[-3]]])[0])
+        predictions.append(pred)
+        history.append(pred)
+    return np.asarray(predictions)
+
+
+def validate_models(years, values, order):
+    """Validate candidate models on the last HOLDOUT_SIZE observations."""
+    years = list(years)
+    values = np.asarray(values, dtype=float)
+    holdout = min(HOLDOUT_SIZE, max(1, len(values) // 4))
+    train_years, test_years = years[:-holdout], years[-holdout:]
+    train_values, test_values = values[:-holdout], values[-holdout:]
+
+    candidates = {}
+    candidates["Linear regression"] = forecast_linear(train_years, train_values, test_years)
+    candidates["Exponential smoothing - Holt"] = forecast_holt(train_values, holdout)
+    candidates["Monte Carlo"] = forecast_monte_carlo(train_values, holdout)
+    candidates["ARIMA/SARIMA"] = forecast_arima(train_values, holdout, order)[0]
+    candidates["Machine learning - Random Forest"] = forecast_ml(train_years, train_values, test_years)
+
+    rows = []
+    for model_name, prediction in candidates.items():
+        rows.append({
+            "model": model_name,
+            "mae": mean_absolute_error(test_values, prediction),
+            "rmse": rmse(test_values, prediction),
+            "mape": mape(test_values, prediction),
+        })
+    return pd.DataFrame(rows).sort_values("mae").reset_index(drop=True)
+
+
+def forecast_all_models(years, values, order, horizon=FORECAST_HORIZON):
+    """Fit models on all available history and forecast future fiscal years."""
+    years = list(years)
+    values = np.asarray(values, dtype=float)
+    future_years = [years[-1] + step for step in range(1, horizon + 1)]
+
+    forecasts = {
+        "Linear regression": forecast_linear(years, values, future_years),
+        "Exponential smoothing - Holt": forecast_holt(values, horizon),
+        "Monte Carlo": forecast_monte_carlo(values, horizon),
+        "ARIMA/SARIMA": forecast_arima(values, horizon, order)[0],
+        "Machine learning - Random Forest": forecast_ml(years, values, future_years),
+    }
+
+    rows = []
+    for model_name, predicted_values in forecasts.items():
+        for fy, predicted in zip(future_years, predicted_values):
+            rows.append({"model": model_name, "fy": fy, "forecast_amount": predicted})
+    return pd.DataFrame(rows)
+```
+
+## Historical Plots, Diagnostics, Models, Validation, and Forecasts
+
+This section is organized one GL code at a time. For each GL code, the report shows the historical series first, then ACF/PACF diagnostics with confidence intervals, unit-root tests, ARIMA lag-order search, model results, residual tests, forecast values, validation results, and forecast plots.
+
+```{python}
+#| echo: false
+
+
+annual_series_by_gl = {}
+for gl_code in TARGET_GL_CODES:
+    annual = make_annual_series(minor_df, gl_code)
+    annual_series_by_gl[gl_code] = annual
+
+missing_codes = [gl for gl, annual in annual_series_by_gl.items() if annual.empty]
+if missing_codes:
+    print("No minor revenue history found for:", missing_codes)
+```
+
+```{python}
+#| echo: false
+
+all_unit_root_tests = []
+all_order_tables = []
+all_residual_tests = []
+all_validation_tables = []
+all_forecasts = []
+all_best_model_forecasts = []
+all_linear_model_results = []
+```
+
+```{python}
+#| echo: false
+
+
+for gl_code, annual in annual_series_by_gl.items():
+    if annual.empty or len(annual) < 8:
+        print(f"Skipping GL {gl_code}: insufficient annual observations.")
+        continue
+
+    description = annual["description"].iloc[-1]
+    years = annual["fy"].tolist()
+    values = annual["total_amount"].astype(float).to_numpy()
+
+    display(Markdown(f"### GL {gl_code}: {description}"))
+
+    # 1. Historical data plot.
+    display(Markdown("#### Historical Data"))
+    fig_hist = px.line(
+        annual,
+        x="fy",
+        y="total_amount",
+        markers=True,
+        title=f"GL {gl_code} - {description}: Historical Minor Revenue",
+        labels={"fy": "Fiscal Year", "total_amount": "Total Amount"},
+    )
+    fig_hist.update_layout(height=450)
+    fig_hist.show()
+
+    # 2. ACF and PACF plots with approximate 95% confidence intervals.
+    display(Markdown("#### ACF and PACF With Confidence Intervals"))
+    plot_acf_pacf_interactive(values, gl_code, description).show()
+
+    # 3. Unit-root tests for level and first difference.
+    display(Markdown("#### Unit Root Tests"))
+    unit_root_table = pd.DataFrame([
+        run_adf(values, "Level"),
+        run_adf(pd.Series(values).diff().dropna(), "First difference"),
+    ])
+    unit_root_table.insert(0, "GL Number", gl_code)
+    unit_root_table.insert(1, "description", description)
+    all_unit_root_tests.append(unit_root_table)
+    display(unit_root_table)
+
+    # 4. ARIMA/SARIMA lag-order search.
+    display(Markdown("#### Lag Order Table"))
+    d = select_d(unit_root_table)
+    best_order, order_table = find_arima_order(values, d=d, max_p=3, max_q=3)
+    order_table.insert(0, "GL Number", gl_code)
+    order_table.insert(1, "description", description)
+    all_order_tables.append(order_table)
+    display(order_table.head(10))
+
+    # 5. Regression/model results.
+    display(Markdown("#### Regression and Model Results"))
+
+    # Linear regression result: useful benchmark trend model.
+    linear_model = LinearRegression()
+    linear_model.fit(np.asarray(years).reshape(-1, 1), values)
+    linear_fitted = linear_model.predict(np.asarray(years).reshape(-1, 1))
+    ss_res = np.sum((values - linear_fitted) ** 2)
+    ss_tot = np.sum((values - values.mean()) ** 2)
+    linear_r2 = 1 - ss_res / ss_tot if ss_tot else np.nan
+    linear_model_result = pd.DataFrame([
+        {
+            "GL Number": gl_code,
+            "description": description,
+            "model": "Linear regression",
+            "intercept": linear_model.intercept_,
+            "fy_coefficient": linear_model.coef_[0],
+            "r_squared": linear_r2,
+        }
+    ])
+    all_linear_model_results.append(linear_model_result)
+    display(linear_model_result)
+
+    # Selected ARIMA/SARIMA model result summary.
+    arima_forecast_values, arima_result = forecast_arima(values, FORECAST_HORIZON, best_order)
+    display(HTML(arima_result.summary().as_html()))
+
+    # 6. Normality and autocorrelation tests on selected ARIMA residuals.
+    display(Markdown("#### Normality and Autocorrelation Tests"))
+    lb_lag = max(1, min(10, len(values) // 2 - 1))
+    lb = acorr_ljungbox(arima_result.resid, lags=[lb_lag], return_df=True)
+    jb_stat, jb_p = jarque_bera(arima_result.resid)
+    residual_tests = pd.DataFrame([
+        {
+            "GL Number": gl_code,
+            "description": description,
+            "test": "Ljung-Box residual autocorrelation",
+            "lag": lb_lag,
+            "statistic": float(lb["lb_stat"].iloc[0]),
+            "p_value": float(lb["lb_pvalue"].iloc[0]),
+            "verdict": "No residual autocorrelation at 5%" if float(lb["lb_pvalue"].iloc[0]) > 0.05 else "Residual autocorrelation may remain",
+        },
+        {
+            "GL Number": gl_code,
+            "description": description,
+            "test": "Jarque-Bera residual normality",
+            "lag": np.nan,
+            "statistic": float(jb_stat),
+            "p_value": float(jb_p),
+            "verdict": "Normality not rejected at 5%" if float(jb_p) > 0.05 else "Normality rejected at 5%",
+        },
+    ])
+    all_residual_tests.append(residual_tests)
+    display(residual_tests)
+
+    # 7. Forecasted values for the next three fiscal years.
+    display(Markdown("#### Forecasted Values"))
+    forecast_table = forecast_all_models(years, values, best_order, horizon=FORECAST_HORIZON)
+    forecast_table.insert(0, "GL Number", gl_code)
+    forecast_table.insert(1, "description", description)
+    all_forecasts.append(forecast_table)
+    forecast_display = forecast_table[["GL Number", "description", "model", "fy", "forecast_amount"]].copy()
+    display(forecast_display)
+
+    # 8. Model validation report table.
+    display(Markdown("#### Model Validation Report"))
+    validation_table = validate_models(years, values, best_order)
+    validation_table.insert(0, "GL Number", gl_code)
+    validation_table.insert(1, "description", description)
+    validation_table.insert(2, "selected_arima_order", str(best_order))
+    all_validation_tables.append(validation_table)
+    display(validation_table)
+
+    # 9. Historical and forecasted values plot for every model.
+    display(Markdown("#### Historical and Forecasted Values Plot"))
+    fig_all_models = go.Figure()
+    fig_all_models.add_trace(go.Scatter(x=years, y=values, mode="lines+markers", name="Historical"))
+    for model_name, model_forecast in forecast_table.groupby("model"):
+        fig_all_models.add_trace(go.Scatter(
+            x=[years[-1], *model_forecast["fy"].tolist()],
+            y=[values[-1], *model_forecast["forecast_amount"].tolist()],
+            mode="lines+markers",
+            line={"dash": "dash"},
+            name=model_name,
+        ))
+    fig_all_models.update_layout(
+        title=f"GL {gl_code} - {description}: Historical and Forecasted Revenue",
+        xaxis_title="Fiscal Year",
+        yaxis_title="Amount",
+        height=550,
+    )
+    fig_all_models.show()
+
+    # 10. Best model plot based on validation MAE.
+    display(Markdown("#### Best Model Plot"))
+    best_model = validation_table.iloc[0]["model"]
+    best_forecast = forecast_table[forecast_table["model"].eq(best_model)].copy()
+    best_forecast["best_model"] = best_model
+    all_best_model_forecasts.append(best_forecast)
+
+    fig_best = go.Figure()
+    fig_best.add_trace(go.Scatter(x=years, y=values, mode="lines+markers", name="Historical"))
+    fig_best.add_trace(go.Scatter(
+        x=[years[-1], *best_forecast["fy"].tolist()],
+        y=[values[-1], *best_forecast["forecast_amount"].tolist()],
+        mode="lines+markers",
+        line={"dash": "dash"},
+        name=f"Best validation model: {best_model}",
+    ))
+    fig_best.update_layout(
+        title=f"GL {gl_code} - {description}: Best Model Forecast",
+        xaxis_title="Fiscal Year",
+        yaxis_title="Amount",
+        height=500,
+    )
+    fig_best.show()
+```
+
+# Stress Testing Scenarios
+
+This section lets you customize event or policy assumptions on top of the best validation model forecast for each GL code. The stress-test table is intentionally simple: edit the `dollar_adjustment` and `pct_adjustment` fields for any GL code and fiscal year, then rerun the report.
+
+For example, GL `3050` is intoxicating beverage tax / liquor tax. If a large event is expected to increase liquor activity, you can add a positive dollar adjustment. The default example below uses the 2024 Super Bowl estimate of about `$3,000,000` as a placeholder adjustment for FY 2027 `ACAA` and FY 2028 `SUPERBOWL`.
+
+```{python}
+# Build the best-model forecast table if it has not already been consolidated.
+best_model_forecasts_for_stress = (
+    pd.concat(all_best_model_forecasts, ignore_index=True)
+    if all_best_model_forecasts else pd.DataFrame()
+)
+
+# These are the fiscal years that will be stress tested.
+stress_years = sorted(best_model_forecasts_for_stress["fy"].unique())
+
+# Start with a no-stress baseline for every GL code and forecast year.
+stress_assumptions = []
+for gl_code in TARGET_GL_CODES:
+    annual = annual_series_by_gl.get(gl_code, pd.DataFrame())
+    if annual.empty:
+        continue
+    description = annual["description"].iloc[-1]
+    for fy in stress_years:
+        stress_assumptions.append({
+            "GL Number": gl_code,
+            "description": description,
+            "fy": int(fy),
+            "scenario_note": "Baseline / no manual stress adjustment",
+            "dollar_adjustment": 0.0,
+            "pct_adjustment": 0.0,
+        })
+
+stress_assumptions = pd.DataFrame(stress_assumptions)
+
+# Customize stress assumptions here.
+# Example: GL 3050 intoxicating beverage tax / liquor tax.
+# FY 2027: ACAA event assumption. Placeholder impact is +$3M.
+# FY 2028: Super Bowl assumption. Placeholder impact is +$3M, based on the 2024 Super Bowl estimate.
+stress_assumptions.loc[
+    stress_assumptions["GL Number"].eq("3050") & stress_assumptions["fy"].eq(2027),
+    ["scenario_note", "dollar_adjustment", "pct_adjustment"],
+] = ["ACAA event liquor-tax stress assumption", 3_000_000.0, 0.0]
+
+stress_assumptions.loc[
+    stress_assumptions["GL Number"].eq("3050") & stress_assumptions["fy"].eq(2028),
+    ["scenario_note", "dollar_adjustment", "pct_adjustment"],
+] = ["SUPERBOWL liquor-tax stress assumption, using 2024 +$3M estimate", 3_000_000.0, 0.0]
+
+# Display only rows with non-zero adjustments first, followed by the full table if you need to inspect all GLs.
+display(stress_assumptions.query("dollar_adjustment != 0 or pct_adjustment != 0"))
+```
+
+```{python}
+# Apply stress assumptions to the best-model forecast.
+stress_test_forecasts = best_model_forecasts_for_stress.merge(
+    stress_assumptions,
+    on=["GL Number", "description", "fy"],
+    how="left",
+)
+
+stress_test_forecasts["scenario_note"] = stress_test_forecasts["scenario_note"].fillna("Baseline / no manual stress adjustment")
+stress_test_forecasts["dollar_adjustment"] = stress_test_forecasts["dollar_adjustment"].fillna(0.0)
+stress_test_forecasts["pct_adjustment"] = stress_test_forecasts["pct_adjustment"].fillna(0.0)
+
+# Stress formula: first add the dollar adjustment, then apply percentage adjustment.
+stress_test_forecasts["baseline_forecast_amount"] = stress_test_forecasts["forecast_amount"]
+stress_test_forecasts["stressed_forecast_amount"] = (
+    stress_test_forecasts["baseline_forecast_amount"]
+    + stress_test_forecasts["dollar_adjustment"]
+) * (1 + stress_test_forecasts["pct_adjustment"])
+stress_test_forecasts["stress_change_amount"] = (
+    stress_test_forecasts["stressed_forecast_amount"]
+    - stress_test_forecasts["baseline_forecast_amount"]
+)
+
+stress_test_forecasts = stress_test_forecasts[[
+    "GL Number",
+    "description",
+    "best_model",
+    "fy",
+    "scenario_note",
+    "baseline_forecast_amount",
+    "dollar_adjustment",
+    "pct_adjustment",
+    "stressed_forecast_amount",
+    "stress_change_amount",
+]]
+
+stress_test_forecasts.to_csv(RESULTS_DIR / "top_minor_stress_test_forecasts.csv", index=False)
+stress_assumptions.to_csv(RESULTS_DIR / "top_minor_stress_test_assumptions.csv", index=False)
+
+stress_test_forecasts
+```
+
+```{python}
+# Plot stress-test results separately for each GL code.
+for gl_code in TARGET_GL_CODES:
+    annual = annual_series_by_gl.get(gl_code, pd.DataFrame())
+    stress_one = stress_test_forecasts[stress_test_forecasts["GL Number"].eq(gl_code)].copy()
+    if annual.empty or stress_one.empty:
+        continue
+
+    description = annual["description"].iloc[-1]
+    years = annual["fy"].tolist()
+    values = annual["total_amount"].astype(float).tolist()
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=years,
+        y=values,
+        mode="lines+markers",
+        name="Historical",
+    ))
+    fig.add_trace(go.Scatter(
+        x=[years[-1], *stress_one["fy"].tolist()],
+        y=[values[-1], *stress_one["baseline_forecast_amount"].tolist()],
+        mode="lines+markers",
+        line={"dash": "dash"},
+        name="Best-model baseline forecast",
+    ))
+    fig.add_trace(go.Scatter(
+        x=[years[-1], *stress_one["fy"].tolist()],
+        y=[values[-1], *stress_one["stressed_forecast_amount"].tolist()],
+        mode="lines+markers",
+        line={"dash": "dot", "width": 3},
+        name="Stress-test forecast",
+        text=["Historical anchor", *stress_one["scenario_note"].tolist()],
+        hovertemplate="FY %{x}<br>Amount %{y:,.0f}<br>%{text}<extra></extra>",
+    ))
+    fig.update_layout(
+        title=f"GL {gl_code} - {description}: Stress-Test Forecast",
+        xaxis_title="Fiscal Year",
+        yaxis_title="Amount",
+        height=500,
+    )
+    fig.show()
+```
+# Appendix
+
+## Consolidated Tables and Saved Outputs
+
+```{python}
+#| echo: false
+
+
+unit_root_results = pd.concat(all_unit_root_tests, ignore_index=True) if all_unit_root_tests else pd.DataFrame()
+order_results = pd.concat(all_order_tables, ignore_index=True) if all_order_tables else pd.DataFrame()
+residual_test_results = pd.concat(all_residual_tests, ignore_index=True) if all_residual_tests else pd.DataFrame()
+linear_model_results = pd.concat(all_linear_model_results, ignore_index=True) if all_linear_model_results else pd.DataFrame()
+validation_results = pd.concat(all_validation_tables, ignore_index=True) if all_validation_tables else pd.DataFrame()
+forecast_results = pd.concat(all_forecasts, ignore_index=True) if all_forecasts else pd.DataFrame()
+best_model_forecasts = pd.concat(all_best_model_forecasts, ignore_index=True) if all_best_model_forecasts else pd.DataFrame()
+
+unit_root_results.to_csv(RESULTS_DIR / "top_minor_unit_root_tests.csv", index=False)
+order_results.to_csv(RESULTS_DIR / "top_minor_arima_order_search.csv", index=False)
+residual_test_results.to_csv(RESULTS_DIR / "top_minor_residual_tests.csv", index=False)
+linear_model_results.to_csv(RESULTS_DIR / "top_minor_linear_model_results.csv", index=False)
+validation_results.to_csv(RESULTS_DIR / "top_minor_model_validation.csv", index=False)
+forecast_results.to_csv(RESULTS_DIR / "top_minor_all_model_forecasts.csv", index=False)
+best_model_forecasts.to_csv(RESULTS_DIR / "top_minor_best_model_forecasts.csv", index=False)
+if "stress_test_forecasts" in globals():
+    stress_test_forecasts.to_csv(RESULTS_DIR / "top_minor_stress_test_forecasts.csv", index=False)
+if "stress_assumptions" in globals():
+    stress_assumptions.to_csv(RESULTS_DIR / "top_minor_stress_test_assumptions.csv", index=False)
+
+print("Saved output files to:", RESULTS_DIR)
+```
+
+## Unit Root Test Results
+
+```{python}
+#| echo: false
+
+
+unit_root_results
+```
+
+## ARIMA / SARIMA Order Search Results
+
+```{python}
+#| echo: false
+
+
+order_results.groupby("GL Number", as_index=False).head(5)
+```
+
+## Regression Model Results
+
+```{python}
+#| echo: false
+
+
+linear_model_results
+```
+
+## Normality and Autocorrelation Test Results
+
+```{python}
+#| echo: false
+
+
+residual_test_results
+```
+
+## Model Validation Table
+
+```{python}
+#| echo: false
+
+
+validation_results
+```
+
+## Best Model by GL Code
+
+```{python}
+#| echo: false
+
+
+best_by_gl = validation_results.sort_values("mae").groupby("GL Number", as_index=False).first()
+best_by_gl[["GL Number", "description", "model", "selected_arima_order", "mae", "rmse", "mape"]]
+```
+
+## Forecast Values: All Models
+
+```{python}
+#| echo: false
+
+
+forecast_results
+```
+
+## Forecast Values: Best Validation Model Only
+
+```{python}
+#| echo: false
+
+
+best_model_forecasts
+```
+
+# Notes for Future Changes
+
+- To change the GL codes modeled, edit `TARGET_GL_CODES` in the Modeling Functions section.
+- To change the forecast horizon, edit `FORECAST_HORIZON`.
+- To use a longer validation period, edit `HOLDOUT_SIZE`.
+- The ARIMA/SARIMA section uses annual data, so no explicit seasonal period is included. If monthly data are modeled later, add a seasonal order with a 12-month period.
+- GL `3290` is excluded from `minor_df` because it is treated as Major.
+
+
+
+
+
+
