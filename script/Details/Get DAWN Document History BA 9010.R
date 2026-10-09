@@ -3,17 +3,14 @@ script_dir <- if (length(script_arg) > 0) {
   dirname(normalizePath(sub("^--file=", "", script_arg[1])))
 } else if (file.exists("DAWN Document History Helper.R")) {
   normalizePath(getwd())
-} else if (file.exists(file.path("script", "DAWN Document History Helper.R"))) {
-  normalizePath(file.path(getwd(), "script"))
+} else if (file.exists(file.path("script", "Details", "DAWN Document History Helper.R"))) {
+  normalizePath(file.path(getwd(), "script", "Details"))
 } else {
   stop("Could not find DAWN Document History Helper.R. Run this script from the project root or script folder.", call. = FALSE)
 }
 
-project_dir <- if (basename(script_dir) == "script") {
-  normalizePath(file.path(script_dir, ".."), mustWork = FALSE)
-} else {
-  script_dir
-}
+# Scripts are stored in script/Details, while data files live at the project root.
+project_dir <- normalizePath(file.path(script_dir, "..", ".."), mustWork = FALSE)
 data_dir <- file.path(project_dir, "data")
 
 source(file.path(script_dir, "DAWN Document History Helper.R"))

@@ -10,10 +10,11 @@ script_dir <- if (length(script_arg) > 0) {
 }
 
 project_dir <- normalizePath(file.path(script_dir, "..", ".."), mustWork = FALSE)
-base_script_dir <- file.path(project_dir, "script")
+aggregate_script_dir <- file.path(project_dir, "script", "Aggregate")
+detail_script_dir <- file.path(project_dir, "script", "Details")
 data_dir <- file.path(project_dir, "data_filtered_gl")
 
-source(file.path(base_script_dir, "DAWN Revenue Download Helper.R"))
+source(file.path(aggregate_script_dir, "DAWN Revenue Download Helper.R"))
 source(file.path(script_dir, "Filtered GL Revenue Download Helper.R"))
 
 # Edit here if you want a smaller/larger BA set.

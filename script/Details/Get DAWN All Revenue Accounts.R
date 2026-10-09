@@ -3,19 +3,16 @@ script_dir <- if (length(script_arg) > 0) {
   dirname(normalizePath(sub("^--file=", "", script_arg[1])))
 } else if (file.exists("DAWN Revenue Download Helper.R")) {
   normalizePath(getwd())
-} else if (file.exists(file.path("script", "DAWN Revenue Download Helper.R"))) {
-  normalizePath(file.path(getwd(), "script"))
+} else if (file.exists(file.path("script", "Aggregate", "DAWN Revenue Download Helper.R"))) {
+  normalizePath(file.path(getwd(), "script", "Aggregate"))
 } else {
-  stop("Could not find DAWN Revenue Download Helper.R. Run this script from the project root or script folder.", call. = FALSE)
+  stop("Could not find DAWN Revenue Download Helper.R. Run this script from the project root or script/Aggregate folder.", call. = FALSE)
 }
-project_dir <- if (basename(script_dir) == "script") {
-  normalizePath(file.path(script_dir, ".."), mustWork = FALSE)
-} else {
-  script_dir
-}
+# Scripts are stored in script/Details, while data files live at the project root.
+project_dir <- normalizePath(file.path(script_dir, "..", ".."), mustWork = FALSE)
 data_dir <- file.path(project_dir, "data")
 
-source(file.path(script_dir, "DAWN Revenue Download Helper.R"))
+source(file.path(project_dir, "script", "Aggregate", "DAWN Revenue Download Helper.R"))
 
 # Example script for downloading a selected GL range.
 # Remove revenue_account_min and revenue_account_max to download every revenue
